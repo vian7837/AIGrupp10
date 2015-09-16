@@ -46,7 +46,6 @@ hCost = function(neighborX, neighborY, xDest, yDest) {
 }
 
 fCost = function(roads,car,neighborX,neighborY,xDest,yDest) {
-  fTotal = 1000
   return (gCost(roads,car,neighborX,neighborY) + hCost(neighborX,neighborY,xDest,yDest))  
 }
 
@@ -104,6 +103,80 @@ nextPackage=function(x,y,packages) {
   return(bestNode)
 }
 
+translator <- function(car,destx,desty) {
+  if (car$x == destx && car$y > desty) {
+    return (2)
+  }
+  else if (car$x == destx && car$y < desty) {
+    return (8)
+  }
+  else if (car$x < destx && car$y == desty) {
+    return (6)
+  }
+  else if (car$x > destx && car$y == desty) {
+    return (4)
+  }
+  else (return (5))
+}
+
+existsInList <- function(element, list){
+  value <- FALSE
+  for (i in 1:list){
+    if (element == list[i]){
+      value <- TRUE
+    }
+  }
+  return (value)
+}
+
+
+aStar <- function(roads, car, packages, destination) {
+  openList <- list(list(car$x, car$y, fcost <- fCost(roads, car, car$x, car$y,destination[[1]][1], destination[[1]][2]), gCost <- gCost(nånting), hCost <- hCost(nånting), parent <- list(car$x,car$y)))
+  closedList <- list()
+  currentSquare <- list()
+  goalReached <- FALSE
+  temp = 0
+  returnList <-list()
+  
+    #orderList <- orderList[order(fCost)]
+    currentSquare = openList[1] # find a way to sort the openlist!!!!!
+    closedList <- append(closedList, currentSquare)
+    
+    if (hCost(currentSquare) == 0) {
+      goalReached <- TRUE
+    }
+    neighborList <- getNeighbors(currentSquare) # find a way to record all values
+    
+    neighborList[i]
+    i++
+    for (i in 1:neighborList) {
+      if (existsInList(neighborList[i], neighborList)) {
+        break
+      }
+      if  (!existsInList(openList[i], openList)) {
+        openList <- append(openList, i)
+        i$parent <- currentSquare
+        i$fCost <- fCost(roads, car, i[1], i[2], destination[1], destination[2])
+      }
+      if (existsInList(openList[i], openList)) {
+        if (currentSquare$gCost + icost < i$gCost ) {
+          i$gCost<-currentSquare$gCost + icost
+          i$parent <- currentSquare
+        }
+      }
+      
+      for (element in openList) {
+        if (element$fCost < temp) {
+        temp <- element$fCost
+        returnList <- element
+        }
+      }
+      
+      
+    
+  }
+return (returnList)
+  }
 
 masterMindDM=function(roads,car,packages) {
   startNodeParent <- list(car$x,car$y)
@@ -111,6 +184,17 @@ masterMindDM=function(roads,car,packages) {
   startNodeFCost <- hCost(car$x,car$y,nextPackageStart[[1]][1],nextPackageStart[[1]][2])
   openList = list(list(car$x,car$y,parent = startNodeParent,f=startNodeFCost,g = 0))
   
+  if (availablePackages(packages)) {
+   if (car$load == 0) {
+     destination <- nextPackage(car$x,car$y,packages)
+     aStar(car, destination)
+   } 
+    destination <- list(packages[car$load, 3], packages[car$load,4])
+    moveList <- aStar(car, destination)
+    nextStep <- translator(car, moveList[[1]][1], moveList[[1]][2])
+    car$nextMove <- moveList[1]
+  }
+  return (car)
   
 
 }
