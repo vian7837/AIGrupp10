@@ -35,26 +35,35 @@ manualDM=function(roads,car,packages) {
   return (car)
 }
 
-gCalc = function(roads, car, neighborX, neighborY) {
-  if (car$x == neighborX) {
+gCalc = function(roads, parent,neighborX, neighborY) {
+  parentX <- as.integer(parent[1])
+  parentY <- as.integer(parent[2])
+  neighborX <- as.integer(neighborX)
+  neighborY <- as.integer(neighborY)
+  if (parent[1] == neighborX) {
     #vertical move
-    return (roads$vroads[min(car$y,neighborY), car$x])
+    return (roads$vroads[min(parentY,neighborY), parentX] + parent$gCost) 
   }
   else {
     #horizontal move
-    return (roads$hroads[car$y,min(neighborX,car$x)])
+    return (roads$hroads[parentY,min(neighborX,parentX)] + parent$gCost)
   }
 }
 
 hCalc = function(neighborX, neighborY, xDest, yDest) {
+  neighborX <- as.integer(neighborX)
+  neighborY <- as.integer(neighborY)
+  xDest <- as.integer(xDest)
+  yDest <- as.integer(yDest)
+  
   xCost <- abs(neighborX - xDest)
-  yCost <- abs(neighborY - yDest)
+  yCost <- abs(as.integer(neighborY) - yDest)
   manhattanCost <- (xCost + yCost)
   return (manhattanCost)
 }
 
-fCalc = function(roads,car,neighborX,neighborY,xDest,yDest) {
-  fTotal <- (gCalc(roads,car,as.integer(neighborX),as.integer(neighborY))+hCalc(as.integer(neighborX),as.integer(neighborY),as.integer(xDest),as.integer(yDest)))
+fCalc = function(roads,parent,neighborX,neighborY,xDest,yDest) {
+  fTotal <- (gCalc(roads,parent,as.integer(neighborX),as.integer(neighborY))+hCalc(as.integer(neighborX),as.integer(neighborY),as.integer(xDest),as.integer(yDest)))
   return (fTotal) 
 }
 
@@ -68,7 +77,8 @@ isValid = function(x, y) {
 }
 
 getNeighbors = function(x,y) {
-  
+  x <- as.integer(x)
+  y <- as.integer(y)
   validNeighborList = list()
   left = list(list(x-1,y))
   right = list(list(x+1,y))
@@ -94,8 +104,6 @@ getNeighbors = function(x,y) {
 
 
 nextPackage=function(x,y,packages) {
-  
-  
    hValue = Inf
    noOfPackages <- nrow(packages)
    bestNode <- list()
@@ -127,65 +135,23 @@ translator <- function(car,destx,desty) {
 
 existsInList <- function(element, list){
   value <- FALSE
-  lenghtOfList <- length(list)
+  lengthOfList <- length(list)
+  if (lengthOfList == 0) {
+    return (FALSE)
+  }
   for (i in 1:lengthOfList){
-    if (element[1] == list[[i]][1] && element[2] == list[[i]][2]){
+    if ((as.integer(element[1]) == as.integer(list[[i]][1])) && (as.integer(element[2]) == as.integer(list[[i]][2]))){
       value <- TRUE
     }
   }
   return (value)
 }
 
-
-# aStar <- function(roads, car, packages, destination) {
-#   openList <- list(list(car$x, car$y, fCost <- fCalc(roads, car, car$x, car$y,destination[1], destination[2]), parent <- list(car$x,car$y)))
-#   closedList <- list()
-#   goalReached <- FALSE
-#   temp = 0
-#   returnList <-list()
-#   
-#   #orderList <- orderList[order(fCost)]
-#   currentSquare <- openList[1] # find a way to sort the openlist!!!!!
-#   closedList <- append(closedList, currentSquare)
-#   
-# #   if (hCalc(currentSquare) == 0) {
-# #     goalReached <- TRUE
-# #   }
-#   neighborList <- getNeighbors(currentSquare) # find a way to record all values
-#   
-#   for (i in 1:neighborList) {
-#     if (existsInList(neighborList[i], neighborList)) {
-#       break
-#     }
-#     if  (!existsInList(openList[i], openList)) {
-#       openList <- append(openList, i)
-#       i$parent <- currentSquare
-#       i$fCost <- fCalc(roads, car, i[1], i[2], destination[1], destination[2])
-#     }
-#     if (existsInList(openList[i], openList)) {
-#       if (currentSquare$gCost + icost < i$gCost ) {
-#         i$gCost<-currentSquare$gCost + icost
-#         i$parent <- currentSquare
-#       }
-#     }
-#     
-#     for (element in openList) {
-#       if (element$fCost < temp) {
-#         temp <- element$fCost
-#         returnList <- element
-#       }
-#     }
-#     
-#     
-#     
-#   }
-#   return (returnList)
-# }
-
-superFCalc <- function(car, roads, list, destination) {
+superFGCalc <- function(parent, roads, list, destination) {
   lengthOfList <- length(list)
   for (i in 1:lengthOfList) {
-    list[[i]]$fCost <- fCalc(roads, car, list[[i]][1], list[[i]][2], destination[1], destination[2])
+    list[[i]]$fCost <- fCalc(roads, parent, list[[i]][1], list[[i]][2], destination[1], destination[2])
+    list[[i]]$gCost <- gCalc(roads, parent, list[[i]][1], list[[i]][2])
   }
   return(list)
 }
@@ -193,29 +159,75 @@ superFCalc <- function(car, roads, list, destination) {
 getLowestFNode <- function(nodeList, destination) {
   lengthOfList <- length(nodeList)
   bestNode <- list()
+  indexForBestNode <- integer
   fTemp <- Inf
   for (i in 1:lengthOfList) {
-    if (as.integer(nodeList[[i]][1]) == as.integer(destination[1]) && as.integer(nodeList[[i]][2]) == as.integer(destination[2])) {
-      bestNode <- list(nodeList[[i]][1], nodeList[[i]][2])
-      break
-      break
-    }
     if (nodeList[[i]]$fCost < fTemp) {
-      bestNode <- list(nodeList[[i]][1], nodeList[[i]][2])
+      bestNode <- nodeList[[i]]
       fTemp <- nodeList[[i]]$fCost
+      indexForBestNode <- i
     }
   }
-  return (bestNode)
+  return (list(bestNode, indexForBestNode))
 }
 
-aStar2 <- function(car, roads, destination) {
-  #openList <- list(list(car$x, car$y, fCost <- hCalc(car$x, car$y,destination[[1]], destination[[2]])))
-  neighborList <- getNeighbors(car$x, car$y)
-  neighborListWithFValues <- superFCalc(car, roads, neighborList, destination)
-  print(paste(neighborListWithFValues))
-  nextCoordinate <- getLowestFNode(neighborListWithFValues, destination)
-  return (nextCoordinate)
-
+aStar <- function(car,roads, destination) {
+  startElement <- list(car$x,car$y)
+  startElement$fCost <- hCalc(car$x, car$y,destination[[1]], destination[[2]])
+  startElement$gCost <- 0
+  startElement$hCost <- hCalc(car$x, car$y,destination[[1]], destination[[2]])
+  startElement$parent <- list(car$x,car$y)
+  #print(paste(startElement))
+  openList <- list()
+  openList <- append(openList, list(startElement))
+  #print(paste("open list: ", openList[[1]]$fCost))
+  closedList <- list()
+  goalReached <- FALSE
+  while(!goalReached) {
+    currentSquareAndIndex <- getLowestFNode(openList, destination)
+    currentSquare <- currentSquareAndIndex[1]
+    currentSquareIndex <- as.integer(currentSquareAndIndex[2])
+    currentSquare <- currentSquare[[1]]
+    openList[[currentSquareIndex]] <- NULL
+    if(currentSquare$hCost == 0) { #i.e. the goal node is reached
+      goalReached <- TRUE
+    }
+    closedList <- append(closedList,list(currentSquare))
+    neighborList <- getNeighbors(currentSquare[1], currentSquare[2])
+    neighborList <- superFGCalc(currentSquare, roads, neighborList, destination)
+    #print(paste(neighborList[[1]]$fCost))
+    for (i in 1:length(neighborList)) {
+      if (existsInList(neighborList[[i]], closedList)){
+        #do nothing
+      }
+      if(!existsInList(neighborList[[i]], openList)) {
+        neighborList[[i]]$parent <- currentSquare
+        neighborList[[i]]$hCost <- hCalc(neighborList[[i]][1],neighborList[[i]][2], destination[1], destination[2])
+        
+        openList <- append(openList, list(neighborList[[i]]))
+      }
+      if(existsInList(neighborList[[i]], openList)) {
+        
+        # If it is on the open list already,check to see if this path to that square is better, 
+        # using G cost as the measure. A lower G cost means that this is a better path. 
+        # If so, change the parent of the square to the current square, and recalculate 
+        # the G and F scores of the square. If you are keeping your open list sorted by F score, 
+        # you may need to resort the list to account for the change.
+        
+        newGCost <- gCalc(roads,currentSquare,neighborList[[i]][1],neighborList[[i]][2]) #make sure that gCalc now calculates result by way of parent
+        newFCost <- newGCost + hCalc(neighborList[[i]][1], neighborList[[i]][2], destination[1], destination[2])
+        oldGCost <- neighborList[[i]]$gCost
+        if(newGCost < oldGCost) {
+          neighborList[[i]]$parent <- currentSquare
+          neighborList[[i]]$fCost <- newFCost
+          neighborList[[i]]$gCost <- newGCost 
+        }
+      }
+    }
+    
+  }
+  return (closedList[[2]])
+  
 }
 
 masterMindDM=function(roads,car,packages) {
@@ -226,12 +238,13 @@ masterMindDM=function(roads,car,packages) {
     if (car$load == 0) {
       destination <- nextPackage(car$x,car$y,packages)
       if (length(destination) != 0) {
-      moveList <- aStar2(car, roads, destination)
+        moveList <- aStar(car, roads, destination)
+        print(paste(moveList))
       }
     }
     else if (!(car$load == 0)) {
-    destination <- list(packages[car$load, 3], packages[car$load,4])
-    moveList <- aStar2(car, roads, destination)
+      destination <- list(packages[car$load, 3], packages[car$load,4])
+      moveList <- aStar(car, roads, destination)
     }
     
     #print(paste("real destination", p))
@@ -239,8 +252,7 @@ masterMindDM=function(roads,car,packages) {
     nextStep <- translator(car, moveList[[1]][1], moveList[[2]][1])
     car$nextMove <- nextStep
   }
-  print(paste(car$load))
-  print(paste(destination))
+  
   return (car)
 }
 #' Run Delivery Man
