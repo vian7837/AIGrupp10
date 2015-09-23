@@ -25,8 +25,8 @@ manualDM=function(roads,car,packages) {
   print(roads$hroads)
   print(roads$vroads)
   if (car$load>0) {
-    print(paste("Current load:",car$load))
-    print(paste("Destination: X",packages[car$load,3],"Y",packages[car$load,4]))
+    #print(paste("Current load:",car$load))
+    #print(paste("Destination: X",packages[car$load,3],"Y",packages[car$load,4]))
     
   } 
   nextPackage(car$x,car$y,packages)
@@ -42,7 +42,7 @@ gCalc = function(roads, parent,neighborX, neighborY) {
   neighborY <- as.integer(neighborY)
   if (parent[1] == neighborX) {
     #vertical move
-    return (roads$vroads[min(parentY,neighborY), parentX] + parent$gCost) 
+    return (roads$vroads[min(parentY,neighborY), parentX] + parent$gCost)
   }
   else {
     #horizontal move
@@ -97,8 +97,6 @@ getNeighbors = function(x,y) {
   if (isValid(up[[1]][1], up[[1]][2])) {
     validNeighborList <- append(validNeighborList,up)
   }
-
-  
   return (validNeighborList)
 }
 
@@ -112,22 +110,23 @@ nextPackage=function(x,y,packages) {
       bestNode <- list(packages[i,1], packages[i,2])
       hValue = abs(x - packages[i,1]) + abs(y-packages[i,2])
     }
-    
     }
   return(bestNode)
 }
 
 translator <- function(car,destx,desty) {
-  if (car$x == destx && car$y > desty) {
+  destx <- as.integer(destx)
+  desty <- as.integer(desty)
+  if (car$x == destx && ((car$y - 1) == desty)) {
     return (2)
   }
-  else if (car$x == destx && car$y < desty) {
+  else if (car$x == destx && car$y == (desty - 1)) {
     return (8)
   }
-  else if (car$x < destx && car$y == desty) {
+  else if (car$x == (destx - 1) && car$y == desty) {
     return (6)
   }
-  else if (car$x > destx && car$y == desty) {
+  else if ((car$x - 1) == destx && car$y == desty) {
     return (4)
   }
   else (return (5))
@@ -177,10 +176,8 @@ aStar <- function(car,roads, destination) {
   startElement$gCost <- 0
   startElement$hCost <- hCalc(car$x, car$y,destination[[1]], destination[[2]])
   startElement$parent <- list(car$x,car$y)
-  #print(paste(startElement))
   openList <- list()
   openList <- append(openList, list(startElement))
-  #print(paste("open list: ", openList[[1]]$fCost))
   closedList <- list()
   goalReached <- FALSE
   while(!goalReached) {
@@ -195,16 +192,15 @@ aStar <- function(car,roads, destination) {
     closedList <- append(closedList,list(currentSquare))
     neighborList <- getNeighbors(currentSquare[1], currentSquare[2])
     neighborList <- superFGCalc(currentSquare, roads, neighborList, destination)
-    #print(paste(neighborList[[1]]$fCost))
     for (i in 1:length(neighborList)) {
       if (existsInList(neighborList[[i]], closedList)){
-        #do nothing
+        next()
       }
       if(!existsInList(neighborList[[i]], openList)) {
         neighborList[[i]]$parent <- currentSquare
         neighborList[[i]]$hCost <- hCalc(neighborList[[i]][1],neighborList[[i]][2], destination[1], destination[2])
-        
         openList <- append(openList, list(neighborList[[i]]))
+        next()
       }
       if(existsInList(neighborList[[i]], openList)) {
         
@@ -222,34 +218,55 @@ aStar <- function(car,roads, destination) {
           neighborList[[i]]$fCost <- newFCost
           neighborList[[i]]$gCost <- newGCost 
         }
+        next()
       }
-    }
-    
+    }  
   }
-  return (closedList[[2]])
-  
+  return (closedList[[length(closedList)]])
+}
+
+list.depth <- function(this, thisdepth = 0) {
+  # code from http://stackoverflow.com/a/13433689/1270695
+  if(!is.list(this)) {
+    return(thisdepth)
+  } else {
+    return(max(unlist(lapply(this, list.depth, thisdepth = thisdepth+1))))    
+  }
+}
+
+backwardsIterator <- function(iList, iterator) {
+  oldList <- iList
+  newList <- list()
+  iterator <- iterator - 1
+  for (i in 1:iterator) {
+    newList <- append(newList, list(oldList[1], oldList[2]))
+    oldList <- oldList$parent
+  }
+  return (newList)
 }
 
 masterMindDM=function(roads,car,packages) {
-  #moveList <- list()
-  
   
   if (length(nextPackage(car$x, car$y,packages)) > 0) {
     if (car$load == 0) {
       destination <- nextPackage(car$x,car$y,packages)
       if (length(destination) != 0) {
         moveList <- aStar(car, roads, destination)
-        print(paste(moveList))
       }
     }
     else if (!(car$load == 0)) {
       destination <- list(packages[car$load, 3], packages[car$load,4])
       moveList <- aStar(car, roads, destination)
     }
-    
-    #print(paste("real destination", p))
-    #print(paste(moveList[[1]][2]))
-    nextStep <- translator(car, moveList[[1]][1], moveList[[2]][1])
+    newMoveList <- backwardsIterator(moveList, list.depth(moveList))
+    #print(paste(newMoveList))
+    if (length(newMoveList) > 2) {
+      moveDestination <- list(newMoveList[[length(newMoveList) - 3]][1], newMoveList[[length(newMoveList) - 2]][1])
+    }
+    else if (length(newMoveList) <= 2) {
+      moveDestination <- list(newMoveList[[length(newMoveList) - 1]][1], newMoveList[[length(newMoveList)]][1])
+    }
+    nextStep <- translator(car, moveDestination[[1]], moveDestination[[2]])
     car$nextMove <- nextStep
   }
   
