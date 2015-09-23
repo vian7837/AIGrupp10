@@ -203,13 +203,6 @@ aStar <- function(car,roads, destination) {
         next()
       }
       if(existsInList(neighborList[[i]], openList)) {
-        
-        # If it is on the open list already,check to see if this path to that square is better, 
-        # using G cost as the measure. A lower G cost means that this is a better path. 
-        # If so, change the parent of the square to the current square, and recalculate 
-        # the G and F scores of the square. If you are keeping your open list sorted by F score, 
-        # you may need to resort the list to account for the change.
-        
         newGCost <- gCalc(roads,currentSquare,neighborList[[i]][1],neighborList[[i]][2]) #make sure that gCalc now calculates result by way of parent
         newFCost <- newGCost + hCalc(neighborList[[i]][1], neighborList[[i]][2], destination[1], destination[2])
         oldGCost <- neighborList[[i]]$gCost
@@ -259,7 +252,6 @@ masterMindDM=function(roads,car,packages) {
       moveList <- aStar(car, roads, destination)
     }
     newMoveList <- backwardsIterator(moveList, list.depth(moveList))
-    #print(paste(newMoveList))
     if (length(newMoveList) > 2) {
       moveDestination <- list(newMoveList[[length(newMoveList) - 3]][1], newMoveList[[length(newMoveList) - 2]][1])
     }
