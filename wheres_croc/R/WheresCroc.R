@@ -6,6 +6,15 @@ randomWC=function(moveInfo,readings,positions,edges,probs) {
 
 #' @export
 manualWC=function(moveInfo,readings,positions,edges,probs) {
+  #print(paste("croc sensor", readings))
+  #print(positions)
+  #print(edges)
+  #print(probs)
+  #bulle <- getTransProb(edges)
+  #print (bulle)
+  #bulle2 <- getStartProb(positions)
+  #print(paste(bulle2))
+  print(paste(moveInfo$mem))
   options=getOptions(positions[3],edges)
   print("Move 1 options (plus 0 for search):")
   print(options)
@@ -28,6 +37,135 @@ manualWC=function(moveInfo,readings,positions,edges,probs) {
   }
   moveInfo$moves=c(mv1,mv2)
   return(moveInfo)
+}
+
+getStartProb <- function(positions){
+  probList <- list()
+  for (i in 1:40) {
+    if ((i == positions[1]) || (i == positions[2])) {
+      probList[i] <- 0
+    }
+    else {
+      probList[i] <- 1/38
+    }
+  }
+  return (probList)
+}
+
+getTransProb <- function(edges) {
+  transitionMatrix <- matrix(0, nrow = 40,ncol = 40)
+  for (i in 1:40) {
+    neighborList <- getOptions(i,edges)
+    noOfNeighbors <- length(neighborList)
+    for (j in 1:noOfNeighbors) {
+      transitionMatrix[i,neighborList[j]] <- 1 / noOfNeighbors 
+    }
+  }
+  return (transitionMatrix)
+}
+
+# /*
+#   Given an observation sequence o[t], a transition
+# matrix a[i,j], and an observation likelihood
+# b[i,o[t]], create a path probability matrix v[i,t].
+# */
+# v[0,0] = 1.0
+#   for t = 0 to T do
+#     for s = 0 to num_states do
+#       for each transition i from s do
+#       new_score = v[s,t] * a[s,i] * b(i,o[t])
+#       if (new_score > v[i,t+1]) then
+#         v[i,t+1] = new_score
+#         back_pointer[i,t+1] = s
+#         
+# /*
+# To find best path, choose the highest probability
+# state in the final column of v[] and backtrack
+# */
+
+maxLastRow <- function(matrix) {
+  noOfRows <- nrow(matrix)
+  biggestProb <- NULL
+  bestNode <- 0
+  for (i in 1:ncol(matrix)) {
+    if (matrix[noOfRows,i] > biggestProb) {
+      bestNode <- i
+    }
+  }
+  return(bestNode)
+}
+
+viterbi_algorithm <- function(obs,start_p,trans_p,emit_p,edges) {
+  v <- matrix(0,nrow=1,ncol=40)
+  back_pointer <- matrix(nrow = 40, ncol=40)
+  for (i in 1:length(obs)) { #for each observation
+    for (j in 1:40) { #for each state
+      neighbors <- getOptions(j,edges)
+      for (k in length(neighbors)) { #for each transition. Could maybe be abundant code
+        new_score = start_p[j] * trans_p[j,neighbors[k]] * emit_p[obs[i],j]
+        if (new_score > v[i+1,k]) {
+          v[i+1,k] <- new_score
+          back_pointer[i+1,k] <- j
+        }
+      }
+    }
+    if (i != length(obs)) {
+      v <- rbind(v,NA)
+    }
+  }
+  bestNode <- maxLastRow(v)
+  return(bestNode)
+}
+
+# viterbi_algorithm2 <- function(obs,start_p,trans_p,emit_p) {
+#   V <- matrix(0,nrow=1, ncol = 40)
+#   path <- list()
+#   for (i in 1:40) {
+#     V[1,j] <- start_p[i] * emit_p[i,obs[1]]
+#     path[i] <- i
+#   }
+#   for (j in 1:length(obs)) { #for each observation do:
+#     V <- rbind(V,0)
+#     newpath <- list()
+#     for (k in 1:40) { #for each state do:
+#       (prob, state) <- max((V[t-1,k0] * trans_[k0,k] * emit_p[k0,obs[t]],k0) for k0 in 1:40)
+#       V[j,i] = prob
+#       newpath[i] <- path[state] + i
+#     }
+#     path <- newpath
+#   }
+#   n=1
+#   if (length(obs) != 1) {
+#     n <- t
+#   }
+#   (prob, state) = max((V[n][y], y) for y in states)
+#   return (prob, path[state])
+#   
+# }
+
+masterMindWC = function(moveInfo,readings,positions,edges,probs){
+  # delete magic number 40
+  transition_prob <- getTransProb(edges)
+  emission_prob <- getEmissionProb(?????)
+  start_prob <- getStartProb(positions) # check to see if any tourists have been killed, if so set start probs to zero for all other nodes
+  moveInfo$mem <- append(moveInfo$mem, readings)
+  observation_list <- moveInfo$mem
+  result <- viterbi_algorithm(observation_list,start_prob,transition_prob,emission_prob,edges)
+  #do step calculations to determine best path to croc -> execute steps
+  if (positions[3]==result) { #are we standing on the croc?
+    moveInfo$moves <- append(moveInfo$moves,0)
+  }
+  neighbors <- getOptions(position[3],edges)
+  step1 <- neighbors[which.min(abs(neighbors-result))]
+  moveInfo$moves <- append(moveInfo$moves,step1)
+  if (step1==result) { #are we on the next step standing on the croc?
+    moveInfo$moves <- append(moveInfo$moves,0)
+  }
+  neighbors <- getOptions(step1,edges)
+  step2 <- neighbors[which.min(abs(neighbors-result))]
+  moveInfo$moves <- append(moveInfo$moves,step2)
+  
+  return (moveInfo)
 }
 
 #' Run Where's Croc
