@@ -14,7 +14,11 @@ manualWC=function(moveInfo,readings,positions,edges,probs) {
   #print (bulle)
   #bulle2 <- getStartProb(positions)
   #print(paste(bulle2))
-  print(paste(moveInfo$mem))
+  #print(paste(moveInfo$mem))
+  #print(readings)
+  #bulle <- getEmissionProb(probs, readings)
+  #print(bulle)
+  print(if (moveInfo$mem == NULL){"sant"})
   options=getOptions(positions[3],edges)
   print("Move 1 options (plus 0 for search):")
   print(options)
@@ -39,17 +43,69 @@ manualWC=function(moveInfo,readings,positions,edges,probs) {
   return(moveInfo)
 }
 
-getStartProb <- function(positions){
-  probList <- list()
+getEmissionProb = function(probs, readings){
+  #   readings kommer f?s av huvudfunktionen senare, h?r anv?nds readings,
+  #   som ?r uppbyggd p? samma s?tt som readings, en lista med tre vektorer 
+  # readings = list(c(171),c(154),c(187))
+  # probs kommer f?s av huvudfunktionen senare, h?r anropas getProbs() 
+  nitrogen <- probs$nitrogen
+  phosphate <- probs$phosphate
+  salinity <- probs$salinity
+  viableNodes = c()
+  
+  for (i in 1:40){
+#     print(paste("Node:",i))
+#     print(paste("lower salinity", salinity[i,1]-salinity[i,2]))
+#     print(paste("readings[1]", readings[1]))
+#     print(paste("higher salinity", salinity[i,1]+salinity[i,2]))
+#     print("-----------------------------------------------")
+#     
+#     print(paste("lower phosphate", phosphate[i,1]-phosphate[i,2]))
+#     print(paste("readings[2]", readings[2]))
+#     print(paste("higher phosphate", phosphate[i,1]+phosphate[i,2]))
+#     print("-----------------------------------------------")
+#     print(paste("lower nitrogen", nitrogen[i,1]-nitrogen[i,2]))
+#     print(paste("readings[3]", readings[3]))
+#     print(paste("higher nitrogen", nitrogen[i,1]+nitrogen[i,2]))
+#     print("-----------------------------------------------")
+    
+    if (salinity[i,1]-salinity[i,2] <=  (readings[1]) && 
+        salinity[i,1]+salinity[i,2] >= (readings[1])) { 
+      if (phosphate[i,1]-phosphate[i,2] <= (readings[2]) &&
+          phosphate[i,1]+phosphate[i,2] >= (readings[2])){
+        if(nitrogen[i,1]-nitrogen[i,2] <= (readings[3]) &&
+           nitrogen[i,1]+nitrogen[i,2] >= (readings[3])) {
+          viableNodes <- append(viableNodes, 1)
+#           print(paste("Node:",i))
+#           print(salinity[i,1])
+#           print(phosphate[i,1])
+#           print(nitrogen[i,1])
+#           print("----------")
+          
+          next()
+          
+        } 
+      }
+    }
+    
+    viableNodes <- append(viableNodes, 0)
+    
+  }
+  
+  return (viableNodes)
+}
+
+getStartProb <- function(positions, emission_prob){
+  probMatrix <- matrix(0,nrow=1,ncol=40)
   for (i in 1:40) {
     if ((i == positions[1]) || (i == positions[2])) {
-      probList[i] <- 0
+      probMatrix[1,i] <- 0
     }
     else {
-      probList[i] <- 1/38
+      probMatrix[1,i] <- 1/38 * emission_prob[i]
     }
   }
-  return (probList)
+  return (probMatrix)
 }
 
 getTransProb <- function(edges) {
@@ -64,25 +120,6 @@ getTransProb <- function(edges) {
   return (transitionMatrix)
 }
 
-# /*
-#   Given an observation sequence o[t], a transition
-# matrix a[i,j], and an observation likelihood
-# b[i,o[t]], create a path probability matrix v[i,t].
-# */
-# v[0,0] = 1.0
-#   for t = 0 to T do
-#     for s = 0 to num_states do
-#       for each transition i from s do
-#       new_score = v[s,t] * a[s,i] * b(i,o[t])
-#       if (new_score > v[i,t+1]) then
-#         v[i,t+1] = new_score
-#         back_pointer[i,t+1] = s
-#         
-# /*
-# To find best path, choose the highest probability
-# state in the final column of v[] and backtrack
-# */
-
 maxLastRow <- function(matrix) {
   noOfRows <- nrow(matrix)
   biggestProb <- NULL
@@ -95,73 +132,65 @@ maxLastRow <- function(matrix) {
   return(bestNode)
 }
 
-viterbi_algorithm <- function(obs,start_p,trans_p,emit_p,edges) {
-  v <- matrix(0,nrow=1,ncol=40)
-  back_pointer <- matrix(nrow = 40, ncol=40)
-  for (i in 1:length(obs)) { #for each observation
-    for (j in 1:40) { #for each state
-      neighbors <- getOptions(j,edges)
-      for (k in length(neighbors)) { #for each transition. Could maybe be abundant code
-        new_score = start_p[j] * trans_p[j,neighbors[k]] * emit_p[obs[i],j]
-        if (new_score > v[i+1,k]) {
-          v[i+1,k] <- new_score
-          back_pointer[i+1,k] <- j
-        }
-      }
-    }
-    if (i != length(obs)) {
-      v <- rbind(v,NA)
+viterbi_algorithm <- function(viterbi_matrix,transition_prob,emission_prob){
+  if (nrow(viterbi_matrix) == 1) { # neutralize base matrix
+    print(viterbi_matrix)
+    newbase = rowSums(bulle)
+    newbase = newbase[1]
+    for (k in 1:40) {
+      viterbi_matrix[1,k] <- (viterbi_matrix[1,k] / newbase)
     }
   }
-  bestNode <- maxLastRow(v)
-  return(bestNode)
+  viterbi_matrix <- rbind(viterbi_matrix,0)
+  observation_no <- nrows(viterbi_matrix)
+  for (i in 1:40) {
+    for(j in 1:40) {
+      if ((viterbi_matrix[observation_no-1,j] * emission_prob[j] * transition_prob[i,j]) > viterbi_matrix[observation_no,j])
+        viterbi_matrix[observation_no,j] <- viterbi_matrix[observation_no-1,j] * emission_prob[j] * transition_prob[i,j]
+    }
+  }
+  newbase <- rowSums(bulle)
+  newbase = newbase[observation_no]
+  for (k in 1:40) { #neutralize the last row
+    viterbi_matrix[observation_no,k] <- (viterbi_matrix[observation_no,k] / newbase)
+  }
+  return (viterbi_matrix)
 }
-
-# viterbi_algorithm2 <- function(obs,start_p,trans_p,emit_p) {
-#   V <- matrix(0,nrow=1, ncol = 40)
-#   path <- list()
-#   for (i in 1:40) {
-#     V[1,j] <- start_p[i] * emit_p[i,obs[1]]
-#     path[i] <- i
-#   }
-#   for (j in 1:length(obs)) { #for each observation do:
-#     V <- rbind(V,0)
-#     newpath <- list()
-#     for (k in 1:40) { #for each state do:
-#       (prob, state) <- max((V[t-1,k0] * trans_[k0,k] * emit_p[k0,obs[t]],k0) for k0 in 1:40)
-#       V[j,i] = prob
-#       newpath[i] <- path[state] + i
-#     }
-#     path <- newpath
-#   }
-#   n=1
-#   if (length(obs) != 1) {
-#     n <- t
-#   }
-#   (prob, state) = max((V[n][y], y) for y in states)
-#   return (prob, path[state])
-#   
-# }
 
 masterMindWC = function(moveInfo,readings,positions,edges,probs){
   # delete magic number 40
   transition_prob <- getTransProb(edges)
-  emission_prob <- getEmissionProb(?????)
-  start_prob <- getStartProb(positions) # check to see if any tourists have been killed, if so set start probs to zero for all other nodes
-  moveInfo$mem <- append(moveInfo$mem, readings)
-  observation_list <- moveInfo$mem
-  result <- viterbi_algorithm(observation_list,start_prob,transition_prob,emission_prob,edges)
+  emission_prob <- getEmissionProb(probs,readings)
+  start_prob <- getStartProb(positions, emission_prob) # check to see if any tourists have been killed, if so set start probs to zero for all other nodes
+  if (length(moveInfo$mem[1]) == 0) {
+    moveInfo$mem <- list()
+    moveInfo$mem[1] <- start_prob
+    moveInfo$mem[2] <- FALSE #tourist 1 has been killed previously
+    moveInfo$mem[3] <- FALSE #tourist 2 has been killed previously
+  }
+  if (positions[1] < 0 && moveInfo$mem[2] == FALSE) {
+    #if tourist 1 has been killed
+    moveInfo$mem <- TRUE
+  }
+  if (positions[2] < 0 && moveInfo$mem[3] == FALSE) {
+    #if tourist 2 has been killed
+    moveInfo$mem <- TRUE
+  }
+  viterbi_matrix <- moveInfo$mem[1]
+  result_matrix <- viterbi_algorithm(viterbi_matrix,transition_prob,emission_prob)
+  moveInfo$mem[1] <- result_matrix
+  result <- maxLastRow(result_matrix)
   #do step calculations to determine best path to croc -> execute steps
   if (positions[3]==result) { #are we standing on the croc?
     moveInfo$moves <- append(moveInfo$moves,0)
   }
   neighbors <- getOptions(position[3],edges)
-  step1 <- neighbors[which.min(abs(neighbors-result))]
+  step1 <- neighbors[which.min(abs(neighbors-result))] #which neighbor is closest to croc?
   moveInfo$moves <- append(moveInfo$moves,step1)
   if (step1==result) { #are we on the next step standing on the croc?
     moveInfo$moves <- append(moveInfo$moves,0)
   }
-  neighbors <- getOptions(step1,edges)
+  neighbors <- getOptions(step1,edges) # if not we take the next step
   step2 <- neighbors[which.min(abs(neighbors-result))]
   moveInfo$moves <- append(moveInfo$moves,step2)
   
