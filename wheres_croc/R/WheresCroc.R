@@ -43,56 +43,80 @@ manualWC=function(moveInfo,readings,positions,edges,probs) {
   return(moveInfo)
 }
 
-getEmissionProb = function(probs, readings){
-  #   readings kommer f?s av huvudfunktionen senare, h?r anv?nds readings,
-  #   som ?r uppbyggd p? samma s?tt som readings, en lista med tre vektorer 
-  # readings = list(c(171),c(154),c(187))
-  # probs kommer f?s av huvudfunktionen senare, h?r anropas getProbs() 
-  nitrogen <- probs$nitrogen
-  phosphate <- probs$phosphate
-  salinity <- probs$salinity
-  viableNodes = c()
-  
-  for (i in 1:40){
-#     print(paste("Node:",i))
-#     print(paste("lower salinity", salinity[i,1]-salinity[i,2]))
-#     print(paste("readings[1]", readings[1]))
-#     print(paste("higher salinity", salinity[i,1]+salinity[i,2]))
-#     print("-----------------------------------------------")
+# getEmissionProb = function(probs, readings){
+#   #   readings kommer f?s av huvudfunktionen senare, h?r anv?nds readings,
+#   #   som ?r uppbyggd p? samma s?tt som readings, en lista med tre vektorer 
+#   # readings = list(c(171),c(154),c(187))
+#   # probs kommer f?s av huvudfunktionen senare, h?r anropas getProbs() 
+#   nitrogen <- probs$nitrogen
+#   phosphate <- probs$phosphate
+#   salinity <- probs$salinity
+#   viableNodes = c()
+#   
+#   for (i in 1:40){
+# #     print(paste("Node:",i))
+# #     print(paste("lower salinity", salinity[i,1]-salinity[i,2]))
+# #     print(paste("readings[1]", readings[1]))
+# #     print(paste("higher salinity", salinity[i,1]+salinity[i,2]))
+# #     print("-----------------------------------------------")
+# #     
+# #     print(paste("lower phosphate", phosphate[i,1]-phosphate[i,2]))
+# #     print(paste("readings[2]", readings[2]))
+# #     print(paste("higher phosphate", phosphate[i,1]+phosphate[i,2]))
+# #     print("-----------------------------------------------")
+# #     print(paste("lower nitrogen", nitrogen[i,1]-nitrogen[i,2]))
+# #     print(paste("readings[3]", readings[3]))
+# #     print(paste("higher nitrogen", nitrogen[i,1]+nitrogen[i,2]))
+# #     print("-----------------------------------------------")
 #     
-#     print(paste("lower phosphate", phosphate[i,1]-phosphate[i,2]))
-#     print(paste("readings[2]", readings[2]))
-#     print(paste("higher phosphate", phosphate[i,1]+phosphate[i,2]))
-#     print("-----------------------------------------------")
-#     print(paste("lower nitrogen", nitrogen[i,1]-nitrogen[i,2]))
-#     print(paste("readings[3]", readings[3]))
-#     print(paste("higher nitrogen", nitrogen[i,1]+nitrogen[i,2]))
-#     print("-----------------------------------------------")
-    
-    if (salinity[i,1]-salinity[i,2] <=  (readings[1]) && 
-        salinity[i,1]+salinity[i,2] >= (readings[1])) { 
-      if (phosphate[i,1]-phosphate[i,2] <= (readings[2]) &&
-          phosphate[i,1]+phosphate[i,2] >= (readings[2])){
-        if(nitrogen[i,1]-nitrogen[i,2] <= (readings[3]) &&
-           nitrogen[i,1]+nitrogen[i,2] >= (readings[3])) {
-          viableNodes <- append(viableNodes, 1)
-#           print(paste("Node:",i))
-#           print(salinity[i,1])
-#           print(phosphate[i,1])
-#           print(nitrogen[i,1])
-#           print("----------")
-          
-          next()
-          
-        } 
-      }
+#     if (salinity[i,1]-salinity[i,2] <=  (readings[1]) && 
+#         salinity[i,1]+salinity[i,2] >= (readings[1])) { 
+#       if (phosphate[i,1]-phosphate[i,2] <= (readings[2]) &&
+#           phosphate[i,1]+phosphate[i,2] >= (readings[2])){
+#         if(nitrogen[i,1]-nitrogen[i,2] <= (readings[3]) &&
+#            nitrogen[i,1]+nitrogen[i,2] >= (readings[3])) {
+#           viableNodes <- append(viableNodes, 1)
+# #           print(paste("Node:",i))
+# #           print(salinity[i,1])
+# #           print(phosphate[i,1])
+# #           print(nitrogen[i,1])
+# #           print("----------")
+#           
+#           next()
+#           
+#         } 
+#       }
+#     }
+#     
+#     viableNodes <- append(viableNodes, 0)
+#     
+#   }
+#  
+#  return (viableNodes)
+#}
+
+getEmissionProb <- function(probs,readings) {
+  crocS <- readings[1]
+  crocP <- readings[2]
+  crocN <- readings[3]
+  waterS <- probs$salinity
+  waterP <- probs$phosphate
+  waterN <- probs$nitrogen
+  emissionVector <- c(0)
+  for (i in 1:40) {
+    if (((waterS[i,1] - waterS[i,2]) <= crocS) &&
+        ((waterS[i,1] + waterS[i,2]) >= crocS) &&
+        
+        ((waterP[i,1] - waterP[i,2]) <= crocP) &&
+        ((waterP[i,1] + waterP[i,2]) >= crocP) &&
+        
+        ((waterN[i,1] - waterN[i,2]) <= crocN) &&
+        ((waterN[i,1] + waterN[i,2]) >= crocN)) {
+      emissionVector[i] <- 1 
     }
-    
-    viableNodes <- append(viableNodes, 0)
-    
+    else{emissionVector[i] <- 0.00001} # this is wrong, should be zero
   }
-  
-  return (viableNodes)
+  return (emissionVector)
 }
 
 getStartProb <- function(positions, emission_prob){
@@ -122,78 +146,102 @@ getTransProb <- function(edges) {
 
 maxLastRow <- function(matrix) {
   noOfRows <- nrow(matrix)
-  biggestProb <- NULL
+  biggestProb <- 0
   bestNode <- 0
   for (i in 1:ncol(matrix)) {
-    if (matrix[noOfRows,i] > biggestProb) {
+    if (matrix[noOfRows,i] >= biggestProb) {
+      biggestProb <- matrix[noOfRows,i]
       bestNode <- i
     }
   }
   return(bestNode)
 }
 
-viterbi_algorithm <- function(viterbi_matrix,transition_prob,emission_prob){
-  if (nrow(viterbi_matrix) == 1) { # neutralize base matrix
-    print(viterbi_matrix)
-    newbase = rowSums(bulle)
-    newbase = newbase[1]
-    for (k in 1:40) {
-      viterbi_matrix[1,k] <- (viterbi_matrix[1,k] / newbase)
-    }
+normalize_last_row <- function(matrix) {
+  matrix_op <- matrix
+  last_row <- nrow(matrix_op)
+  #print(last_row)
+  new_base <- rowSums(matrix_op)
+  #print(new_base)
+  new_base <- new_base[last_row]
+  if (new_base == 0) {
+    print("error: the sum of all probabilities in last row is 0. ")
+    new_base = 1
   }
+  for (i in 1:40) {
+    matrix_op[last_row,i] <- matrix_op[last_row,i] / new_base
+  }
+  return (matrix_op)
+}
+
+viterbi_algorithm <- function(viterbi_matrix,transition_prob,emission_prob){
   viterbi_matrix <- rbind(viterbi_matrix,0)
-  observation_no <- nrows(viterbi_matrix)
+  observation_no <- nrow(viterbi_matrix)
   for (i in 1:40) {
     for(j in 1:40) {
-      if ((viterbi_matrix[observation_no-1,j] * emission_prob[j] * transition_prob[i,j]) > viterbi_matrix[observation_no,j])
-        viterbi_matrix[observation_no,j] <- viterbi_matrix[observation_no-1,j] * emission_prob[j] * transition_prob[i,j]
+      if ((viterbi_matrix[observation_no-1,j] * emission_prob[i] * transition_prob[j,i]) > viterbi_matrix[observation_no,i])
+        viterbi_matrix[observation_no,i] <- viterbi_matrix[observation_no-1,j] * emission_prob[i] * transition_prob[j,i]
     }
   }
-  newbase <- rowSums(bulle)
-  newbase = newbase[observation_no]
-  for (k in 1:40) { #neutralize the last row
-    viterbi_matrix[observation_no,k] <- (viterbi_matrix[observation_no,k] / newbase)
-  }
+  #print(viterbi_matrix)
   return (viterbi_matrix)
 }
 
 masterMindWC = function(moveInfo,readings,positions,edges,probs){
-  # delete magic number 40
+  # delete magic number 40 ?
+  moveInfo$moves <- c()
   transition_prob <- getTransProb(edges)
   emission_prob <- getEmissionProb(probs,readings)
-  start_prob <- getStartProb(positions, emission_prob) # check to see if any tourists have been killed, if so set start probs to zero for all other nodes
-  if (length(moveInfo$mem[1]) == 0) {
-    moveInfo$mem <- list()
-    moveInfo$mem[1] <- start_prob
-    moveInfo$mem[2] <- FALSE #tourist 1 has been killed previously
-    moveInfo$mem[3] <- FALSE #tourist 2 has been killed previously
+  #print(readings)
+  #print(probs)
+  print(paste(emission_prob))
+  if (length(moveInfo$mem) == 0) { # if first time we run function
+    start_prob <- getStartProb(positions, emission_prob)
+    moveInfo$mem <- start_prob
   }
-  if (positions[1] < 0 && moveInfo$mem[2] == FALSE) {
-    #if tourist 1 has been killed
-    moveInfo$mem <- TRUE
+  if (!is.na(positions[1])) {
+    if (positions[1] < 0) {
+      #if tourist 1 has been killed
+      moveInfo$mem <- c(0,nrow=1,ncol=40)
+      moveInfo$mem[abs(positions[1])] <- 1
+    }
   }
-  if (positions[2] < 0 && moveInfo$mem[3] == FALSE) {
-    #if tourist 2 has been killed
-    moveInfo$mem <- TRUE
+  if (!is.na(positions[2])) {
+    if (positions[2] < 0) {
+      #if tourist 2 has been killed
+      moveInfo$mem <- c(0,nrow=1,ncol=40)
+      moveInfo$mem[abs(positions[2])] <- 1
+    }
   }
-  viterbi_matrix <- moveInfo$mem[1]
+  #print(paste(moveInfo$mem))
+  viterbi_matrix <- moveInfo$mem
+  #print(paste(viterbi_matrix))
+  #viterbi_matrix <- normalize_last_row(viterbi_matrix)
+  #print(paste(viterbi_matrix))
   result_matrix <- viterbi_algorithm(viterbi_matrix,transition_prob,emission_prob)
-  moveInfo$mem[1] <- result_matrix
+  viterbi_matrix <- normalize_last_row(result_matrix) #unnecessary step
+  moveInfo$mem <- result_matrix
+  #print(result_matrix)
   result <- maxLastRow(result_matrix)
+  print(paste("result",result))
   #do step calculations to determine best path to croc -> execute steps
   if (positions[3]==result) { #are we standing on the croc?
     moveInfo$moves <- append(moveInfo$moves,0)
   }
-  neighbors <- getOptions(position[3],edges)
+  neighbors <- getOptions(positions[3],edges)
   step1 <- neighbors[which.min(abs(neighbors-result))] #which neighbor is closest to croc?
-  moveInfo$moves <- append(moveInfo$moves,step1)
+  if (positions[3] != result){ #are we not standing on croc?
+    moveInfo$moves <- append(moveInfo$moves,step1)
+  }
   if (step1==result) { #are we on the next step standing on the croc?
     moveInfo$moves <- append(moveInfo$moves,0)
   }
-  neighbors <- getOptions(step1,edges) # if not we take the next step
-  step2 <- neighbors[which.min(abs(neighbors-result))]
-  moveInfo$moves <- append(moveInfo$moves,step2)
-  
+  else if (step1 != result) {
+    neighbors <- getOptions(step1,edges) # if not we take the next step
+    step2 <- neighbors[which.min(abs(neighbors-result))]
+    moveInfo$moves <- append(moveInfo$moves,step2)
+  }
+  #print (moveInfo$moves)
   return (moveInfo)
 }
 
