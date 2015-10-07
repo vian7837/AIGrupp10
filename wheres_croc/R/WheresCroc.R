@@ -99,9 +99,7 @@ maxLastRow <- function(matrix) {
 normalize_last_row <- function(matrix) {
   matrix_op <- matrix
   last_row <- nrow(matrix_op)
-  #print(last_row)
   new_base <- rowSums(matrix_op)
-  #print(new_base)
   new_base <- new_base[last_row]
   if (new_base == 0) {
     print("error: the sum of all probabilities in last row is 0. ")
@@ -122,7 +120,6 @@ viterbi_algorithm <- function(viterbi_matrix,transition_prob,emission_prob){
         viterbi_matrix[observation_no,i] <- viterbi_matrix[observation_no-1,j] * emission_prob[i] * transition_prob[j,i]
     }
   }
-  #print(viterbi_matrix)
   return (viterbi_matrix)
 }
 
@@ -131,9 +128,6 @@ masterMindWC = function(moveInfo,readings,positions,edges,probs){
   moveInfo$moves <- c()
   transition_prob <- getTransProb(edges)
   emission_prob <- getEmissionProb(probs,readings)
-  #print(readings)
-  #print(probs)
-  #print(paste(emission_prob))
   if (length(moveInfo$mem) == 0) { # if first time we run function
     start_prob <- getStartProb(positions, emission_prob)
     moveInfo$mem <- start_prob
@@ -141,28 +135,25 @@ masterMindWC = function(moveInfo,readings,positions,edges,probs){
   if (!is.na(positions[1])) {
     if (positions[1] < 0) {
       #if tourist 1 has been killed
-      moveInfo$mem <- c(0,nrow=1,ncol=40)
-      moveInfo$mem[abs(positions[1])] <- 1
+      moveInfo$mem <- matrix(0,nrow=1,ncol=40)
+      moveInfo$mem[1,abs(positions[1])] <- 1
+      print(paste("TOURIST 1 HAS BEEN KILLED!!!!!!"))
     }
   }
   if (!is.na(positions[2])) {
     if (positions[2] < 0) {
       #if tourist 2 has been killed
-      moveInfo$mem <- c(0,nrow=1,ncol=40)
-      moveInfo$mem[abs(positions[2])] <- 1
+      moveInfo$mem <- matrix(0,nrow=1,ncol=40)
+      moveInfo$mem[1,abs(positions[2])] <- 1
+      print(paste("TOURIST 2 HAS BEEN KILLED!!!!!!"))
     }
   }
-  #print(paste(moveInfo$mem))
   viterbi_matrix <- moveInfo$mem
-  #print(paste(viterbi_matrix))
-  #viterbi_matrix <- normalize_last_row(viterbi_matrix)
-  #print(paste(viterbi_matrix))
+  #viterbi_matrix <- normalize_last_row(viterbi_matrix) # unnecessary
   result_matrix <- viterbi_algorithm(viterbi_matrix,transition_prob,emission_prob)
   viterbi_matrix <- normalize_last_row(result_matrix) #unnecessary step
   moveInfo$mem <- result_matrix
-  print(result_matrix)
   result <- maxLastRow(result_matrix)
-  print(paste("result",result))
   #do step calculations to determine best path to croc -> execute steps
   if (positions[3]==result) { #are we standing on the croc?
     moveInfo$moves <- append(moveInfo$moves,0)
@@ -180,7 +171,6 @@ masterMindWC = function(moveInfo,readings,positions,edges,probs){
     step2 <- neighbors[which.min(abs(neighbors-result))]
     moveInfo$moves <- append(moveInfo$moves,step2)
   }
-  #print (moveInfo$moves)
   return (moveInfo)
 }
 
