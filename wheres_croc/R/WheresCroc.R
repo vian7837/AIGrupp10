@@ -43,58 +43,6 @@ manualWC=function(moveInfo,readings,positions,edges,probs) {
   return(moveInfo)
 }
 
-# getEmissionProb = function(probs, readings){
-#   #   readings kommer f?s av huvudfunktionen senare, h?r anv?nds readings,
-#   #   som ?r uppbyggd p? samma s?tt som readings, en lista med tre vektorer 
-#   # readings = list(c(171),c(154),c(187))
-#   # probs kommer f?s av huvudfunktionen senare, h?r anropas getProbs() 
-#   nitrogen <- probs$nitrogen
-#   phosphate <- probs$phosphate
-#   salinity <- probs$salinity
-#   viableNodes = c()
-#   
-#   for (i in 1:40){
-# #     print(paste("Node:",i))
-# #     print(paste("lower salinity", salinity[i,1]-salinity[i,2]))
-# #     print(paste("readings[1]", readings[1]))
-# #     print(paste("higher salinity", salinity[i,1]+salinity[i,2]))
-# #     print("-----------------------------------------------")
-# #     
-# #     print(paste("lower phosphate", phosphate[i,1]-phosphate[i,2]))
-# #     print(paste("readings[2]", readings[2]))
-# #     print(paste("higher phosphate", phosphate[i,1]+phosphate[i,2]))
-# #     print("-----------------------------------------------")
-# #     print(paste("lower nitrogen", nitrogen[i,1]-nitrogen[i,2]))
-# #     print(paste("readings[3]", readings[3]))
-# #     print(paste("higher nitrogen", nitrogen[i,1]+nitrogen[i,2]))
-# #     print("-----------------------------------------------")
-#     
-#     if (salinity[i,1]-salinity[i,2] <=  (readings[1]) && 
-#         salinity[i,1]+salinity[i,2] >= (readings[1])) { 
-#       if (phosphate[i,1]-phosphate[i,2] <= (readings[2]) &&
-#           phosphate[i,1]+phosphate[i,2] >= (readings[2])){
-#         if(nitrogen[i,1]-nitrogen[i,2] <= (readings[3]) &&
-#            nitrogen[i,1]+nitrogen[i,2] >= (readings[3])) {
-#           viableNodes <- append(viableNodes, 1)
-# #           print(paste("Node:",i))
-# #           print(salinity[i,1])
-# #           print(phosphate[i,1])
-# #           print(nitrogen[i,1])
-# #           print("----------")
-#           
-#           next()
-#           
-#         } 
-#       }
-#     }
-#     
-#     viableNodes <- append(viableNodes, 0)
-#     
-#   }
-#  
-#  return (viableNodes)
-#}
-
 getEmissionProb <- function(probs,readings) {
   crocS <- readings[1]
   crocP <- readings[2]
@@ -104,17 +52,8 @@ getEmissionProb <- function(probs,readings) {
   waterN <- probs$nitrogen
   emissionVector <- c(0)
   for (i in 1:40) {
-    if (((waterS[i,1] - waterS[i,2]) <= crocS) &&
-        ((waterS[i,1] + waterS[i,2]) >= crocS) &&
-        
-        ((waterP[i,1] - waterP[i,2]) <= crocP) &&
-        ((waterP[i,1] + waterP[i,2]) >= crocP) &&
-        
-        ((waterN[i,1] - waterN[i,2]) <= crocN) &&
-        ((waterN[i,1] + waterN[i,2]) >= crocN)) {
-      emissionVector[i] <- 1 
-    }
-    else{emissionVector[i] <- 0.00001} # this is wrong, should be zero
+    probability <- dnorm(crocS,waterS[i,1],waterS[i,2]) * dnorm(crocP,waterP[i,1],waterP[i,2]) * dnorm(crocN,waterN[i,1],waterN[i,2])
+    emissionVector[i] <- probability
   }
   return (emissionVector)
 }
@@ -194,7 +133,7 @@ masterMindWC = function(moveInfo,readings,positions,edges,probs){
   emission_prob <- getEmissionProb(probs,readings)
   #print(readings)
   #print(probs)
-  print(paste(emission_prob))
+  #print(paste(emission_prob))
   if (length(moveInfo$mem) == 0) { # if first time we run function
     start_prob <- getStartProb(positions, emission_prob)
     moveInfo$mem <- start_prob
@@ -221,7 +160,7 @@ masterMindWC = function(moveInfo,readings,positions,edges,probs){
   result_matrix <- viterbi_algorithm(viterbi_matrix,transition_prob,emission_prob)
   viterbi_matrix <- normalize_last_row(result_matrix) #unnecessary step
   moveInfo$mem <- result_matrix
-  #print(result_matrix)
+  print(result_matrix)
   result <- maxLastRow(result_matrix)
   print(paste("result",result))
   #do step calculations to determine best path to croc -> execute steps
