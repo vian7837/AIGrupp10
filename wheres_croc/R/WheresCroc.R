@@ -174,6 +174,19 @@ masterMindWC = function(moveInfo,readings,positions,edges,probs){
   return (moveInfo)
 }
 
+testing <- function(iterations) {
+  score <- 0
+  worst_score <- 0
+  for (i in 1:iterations) {
+    new_score <- runWheresCroc(makeMoves = masterMindWC, showCroc = T, pause = 0.01)
+    if (new_score > worst_score) {
+      worst_score <- new_score
+    }
+    score <- score + new_score
+  }
+  print(paste("average run:", score/iterations,"   ", "Worst run:", worst_score))
+}
+
 #' Run Where's Croc
 #' 
 #' Runs the Where's Croc game. In this game, you are a ranger in an Australian national park. 
