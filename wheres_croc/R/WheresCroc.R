@@ -123,8 +123,14 @@ viterbi_algorithm <- function(viterbi_matrix,transition_prob,emission_prob){
   return (viterbi_matrix)
 }
 
+shortest_path <- function(start,goal,edges) {
+  for (i in 1:40) {
+    neighbors <- getOptions(start,edges)
+  }
+}
+
 masterMindWC = function(moveInfo,readings,positions,edges,probs){
-  # delete magic number 40 ?
+  print(getOptions(20,edges))
   moveInfo$moves <- c()
   transition_prob <- getTransProb(edges)
   emission_prob <- getEmissionProb(probs,readings)
@@ -137,7 +143,6 @@ masterMindWC = function(moveInfo,readings,positions,edges,probs){
       #if tourist 1 has been killed
       moveInfo$mem <- matrix(0,nrow=1,ncol=40)
       moveInfo$mem[1,abs(positions[1])] <- 1
-      print(paste("TOURIST 1 HAS BEEN KILLED!!!!!!"))
     }
   }
   if (!is.na(positions[2])) {
@@ -145,13 +150,11 @@ masterMindWC = function(moveInfo,readings,positions,edges,probs){
       #if tourist 2 has been killed
       moveInfo$mem <- matrix(0,nrow=1,ncol=40)
       moveInfo$mem[1,abs(positions[2])] <- 1
-      print(paste("TOURIST 2 HAS BEEN KILLED!!!!!!"))
     }
   }
   viterbi_matrix <- moveInfo$mem
-  #viterbi_matrix <- normalize_last_row(viterbi_matrix) # unnecessary
   result_matrix <- viterbi_algorithm(viterbi_matrix,transition_prob,emission_prob)
-  viterbi_matrix <- normalize_last_row(result_matrix) #unnecessary step
+  viterbi_matrix <- normalize_last_row(result_matrix)
   moveInfo$mem <- result_matrix
   result <- maxLastRow(result_matrix)
   #do step calculations to determine best path to croc -> execute steps
