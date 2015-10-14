@@ -6,18 +6,6 @@ randomWC=function(moveInfo,readings,positions,edges,probs) {
 
 #' @export
 manualWC=function(moveInfo,readings,positions,edges,probs) {
-  #print(paste("croc sensor", readings))
-  #print(positions)
-  #print(edges)
-  #print(probs)
-  #bulle <- getTransProb(edges)
-  #print (bulle)
-  #bulle2 <- getStartProb(positions)
-  #print(paste(bulle2))
-  #print(paste(moveInfo$mem))
-  #print(readings)
-  #bulle <- getEmissionProb(probs, readings)
-  #print(bulle)
   print(if (moveInfo$mem == NULL){"sant"})
   options=getOptions(positions[3],edges)
   print("Move 1 options (plus 0 for search):")
@@ -130,7 +118,6 @@ shortest_path <- function(start,goal,edges) {
 }
 
 masterMindWC = function(moveInfo,readings,positions,edges,probs){
-  print(getOptions(20,edges))
   moveInfo$moves <- c()
   transition_prob <- getTransProb(edges)
   emission_prob <- getEmissionProb(probs,readings)
